@@ -13,7 +13,7 @@ fsharp_binary(
   ],
   target_frameworks = [ "net6.0" ],
   deps = [
-    "@paket.main//fsharp.core",
     "@paket.main//microsoft.netcore.app.ref",
+    "@paket.main//fsharp.core",
   ],
 )

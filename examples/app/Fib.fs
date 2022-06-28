@@ -2,11 +2,11 @@ module Utils
 
 let fibonacci =
   seq {
-    yield 0
-    yield 1
-
     let mutable n0 = 0
     let mutable n1 = 1
+
+    yield n0
+    yield n1
 
     while true do
       let n2 = n0 + n1

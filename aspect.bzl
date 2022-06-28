@@ -34,8 +34,7 @@ def _print_aspect_impl(target, ctx):
 
       print(fsharp_binary)
 
-      param = getattr(ctx.attr, "characteristic", "compilation_info")
-      json_file = ctx.actions.declare_file('ASPECT_%s.%s.json' % (target.label.name, param))
+      json_file = ctx.actions.declare_file('bazel2proj_%s.json' % (target.label.name))
 
       ctx.actions.write(json_file, fsharp_binary.to_json())
       print("WROTE " + json_file.path)

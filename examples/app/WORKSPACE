@@ -32,3 +32,8 @@ dotnet_register_toolchains("dotnet", "6.0.300")
 load("//deps:paket.bzl", "paket")
 
 paket()
+
+local_repository(
+  name = "bazel2proj",
+  path = "../..",
+)

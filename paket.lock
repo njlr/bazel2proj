@@ -2,9 +2,13 @@ STORAGE: NONE
 RESTRICTION: || (== net6.0) (== netstandard2.1)
 NUGET
   remote: https://api.nuget.org/v3/index.json
+    Expecto (9.0.4)
+      FSharp.Core (>= 4.6)
+      Mono.Cecil (>= 0.11.3)
     Fable.Core (3.7.1)
     FSharp.Core (6.0.5)
     Microsoft.NETCore.App.Ref (6.0.5)
+    Mono.Cecil (0.11.4)
     Newtonsoft.Json (13.0.1)
     Thoth.Json (7.0)
       Fable.Core (>= 3.1.6)
