@@ -1,0 +1,10 @@
+.paket
+paket-files
+
+bazel-*
+
+bin
+obj
+
+.ionide
+.vscode

@@ -1,0 +1,20 @@
+load(
+  "@rules_dotnet//dotnet:defs.bzl",
+  "fsharp_binary",
+  "fsharp_library",
+  "fsharp_nunit_test",
+)
+
+fsharp_binary(
+  name = "bazel2proj",
+  srcs = [
+    "Xml.fs",
+    "Program.fs",
+  ],
+  target_frameworks = [ "net6.0" ],
+  deps = [
+    "@paket.main//fsharp.core",
+    "@paket.main//thoth.json.net",
+    "@paket.main//microsoft.netcore.app.ref",
+  ],
+)

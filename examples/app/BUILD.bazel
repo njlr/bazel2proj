@@ -1,0 +1,19 @@
+load(
+  "@rules_dotnet//dotnet:defs.bzl",
+  "fsharp_binary",
+  "fsharp_library",
+  "fsharp_nunit_test",
+)
+
+fsharp_binary(
+  name = "app",
+  srcs = [
+    "Fib.fs",
+    "Program.fs",
+  ],
+  target_frameworks = [ "net6.0" ],
+  deps = [
+    "@paket.main//fsharp.core",
+    "@paket.main//microsoft.netcore.app.ref",
+  ],
+)
