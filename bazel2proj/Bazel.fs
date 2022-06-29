@@ -63,7 +63,7 @@ let private executeBash (workingDirectory : string) (command : string) =
 
 let findTargets (workspacePath : string) =
   async {
-    let command = """bazel query 'kind("fsharp_binary", "//...")' --output label_kind"""
+    let command = """bazel query 'kind("fsharp_binary", "//...") union kind("fsharp_library", "//...")' --output label_kind"""
 
     let! exitCode, stdout, stderr = executeBash workspacePath command
 

@@ -1,0 +1,17 @@
+load(
+  "@rules_dotnet//dotnet:defs.bzl",
+  "fsharp_binary",
+)
+
+fsharp_binary(
+  name = "app",
+  srcs = [
+    "Program.fs",
+  ],
+  target_frameworks = [ "net6.0" ],
+  deps = [
+    "@paket.main//microsoft.netcore.app.ref",
+    "@paket.main//fsharp.core",
+    "//math",
+  ],
+)

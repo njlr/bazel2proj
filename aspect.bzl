@@ -1,7 +1,9 @@
-FSharpBinary = provider(
+FSharpTarget = provider(
   fields = {
+    'kind' : 'Kind of the target',
     'build_file_path' : 'path to BUILD file',
     'srcs' : 'list of source files',
+    'deps' : 'list of dependencies',
   }
 )
 
@@ -20,24 +22,31 @@ def flatten(xss):
 def _print_aspect_impl(target, ctx):
   if ctx.rule.kind in supported_rule_kinds:
     if hasattr(ctx.rule.attr, 'srcs'):
+
       # print(dir(ctx.rule.attr))
-      # Iterate through the files that make up the sources and
-      # print their paths.
+      # print(ctx.rule.attr.deps)
 
-      for x in ctx.rule.attr.srcs:
-        print(x)
+      if ctx.rule.attr.deps:
+        for d in ctx.rule.attr.deps:
+          print(dir(d))
+          print(dir(d.info))
 
-      fsharp_binary = FSharpBinary(
+      # for x in ctx.rule.attr.srcs:
+      #   print(x)
+
+      fsharp_target = FSharpTarget(
+        kind = ctx.rule.kind,
         build_file_path = ctx.build_file_path,
         srcs = flatten([ [ f.path for f in x.files.to_list() ] for x in ctx.rule.attr.srcs ]),
+        deps = [ str(x.label) for x in ctx.rule.attr.deps ],
       )
 
-      print(fsharp_binary)
+      # print(fsharp_target)
 
       json_file = ctx.actions.declare_file('bazel2proj_%s.json' % (target.label.name))
 
-      ctx.actions.write(json_file, fsharp_binary.to_json())
-      print("WROTE " + json_file.path)
+      ctx.actions.write(json_file, fsharp_target.to_json())
+      # print("WROTE " + json_file.path)
 
       transitive_jsons = depset([ json_file ])
 
