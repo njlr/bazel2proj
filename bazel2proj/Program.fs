@@ -6,6 +6,7 @@ open Thoth.Json.Net
 
 type ProjectInfo =
   {
+    Kind : string
     BuildFilePath : string
     Srcs : string list
     Deps : string list
@@ -14,13 +15,15 @@ type ProjectInfo =
 module ProjectInfo =
 
   let decode : Decoder<ProjectInfo> =
-    Decode.map3
-      (fun bfp srcs deps ->
+    Decode.map4
+      (fun kind bfp srcs deps ->
         {
+          Kind = kind
           BuildFilePath = bfp
           Srcs = srcs
           Deps = deps
         })
+      (Decode.field "kind" Decode.string)
       (Decode.field "build_file_path" Decode.string)
       (Decode.field "srcs" (Decode.list Decode.string))
       (Decode.field "deps" (Decode.list Decode.string))
@@ -84,24 +87,22 @@ let main argv =
             return labelKind.Label, projectInfo
           }
       ]
-      |> Async.Parallel
+      |> fun jobs -> Async.Parallel(jobs, maxDegreeOfParallelism = 8)
 
     let allTargets = Map.ofSeq allTargets
 
     printfn "%A" allTargets
 
-    for KeyValue (label, target) in allTargets do
-      let aop = aspectOutputPath label
-
-      let! content =
-        File.ReadAllTextAsync(Path.Combine(workspacePath, aop))
-        |> Async.AwaitTask
-
-      let projectInfo =
-        content
-        |> Decode.unsafeFromString ProjectInfo.decode
-
+    for KeyValue (label, projectInfo) in allTargets do
       printfn "%A" projectInfo
+
+      let outputType =
+        match projectInfo.Kind with
+        | "fsharp_binary" -> "Exe"
+        | "csharp_binary" -> "Exe"
+        | "fsharp_library" -> "Library"
+        | "csharp_library" -> "Library"
+        | x -> failwith $"Unrecognized kind \"{x}\""
 
       let xml =
         Xml.element
@@ -112,7 +113,7 @@ let main argv =
               "PropertyGroup"
               []
               [
-                Xml.stringElement "OutputType" "Exe"
+                Xml.stringElement "OutputType" outputType
                 Xml.stringElement "TargetFramework" "net6.0"
               ]
 
