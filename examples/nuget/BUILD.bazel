@@ -6,12 +6,12 @@ load(
 fsharp_binary(
   name = "app",
   srcs = [
-    "Fib.fs",
     "Program.fs",
   ],
   target_frameworks = [ "net6.0" ],
   deps = [
     "@paket.main//microsoft.netcore.app.ref",
     "@paket.main//fsharp.core",
+    "@paket.main//thoth.json.net",
   ],
 )

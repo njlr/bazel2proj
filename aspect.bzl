@@ -1,15 +1,9 @@
-FSharpTarget = provider(
-  fields = {
-    'kind' : 'Kind of the target',
-    'build_file_path' : 'path to BUILD file',
-    'srcs' : 'list of source files',
-    'deps' : 'list of dependencies',
-  }
-)
-
 supported_rule_kinds = [
   "fsharp_binary",
   "fsharp_library",
+  "csharp_binary",
+  "csharp_library",
+  "import_library",
 ]
 
 def flatten(xss):
@@ -19,52 +13,121 @@ def flatten(xss):
       result.append(x)
   return result
 
-def _print_aspect_impl(target, ctx):
+def structify_file(x):
+  return struct(
+    is_directory = x.is_directory,
+    is_source = x.is_source,
+    path = x.path,
+    root = x.root.path,
+  )
+
+def structify_ref(x):
+  return struct(
+    files = [ structify_file(f) for f in x.files.to_list() ],
+  )
+
+def structify_src(x):
+  return struct(
+    label = str(x.label),
+    files = [ structify_file(f) for f in x.files.to_list() ],
+  )
+
+def structify_target(x):
+  # print("TARGET")
+  # print(dir(x))
+  # print(x)
+  return struct(
+    files = [ structify_file(f) for f in x.files.to_list() ],
+  )
+
+def structify_rule(rule):
+  if rule.kind in [ "fsharp_binary", "fsharp_library", "csharp_binary", "csharp_library" ]:
+    # print(dir(rule.attr))
+    # print(rule.attr.testonly)
+    return struct(
+      name = rule.attr.name,
+      kind = rule.kind,
+      srcs = [ structify_src(x) for x in rule.attr.srcs ],
+      deps = [ str(x.label) for x in rule.attr.deps ],
+      testonly = rule.attr.testonly,
+    )
+
+  if rule.kind == "import_library":
+    for x in rule.attr.libs:
+      print("rule.attr.libs")
+      print(type(x))
+      print(dir(x))
+      print(x)
+    return struct(
+      kind = rule.kind,
+      libs = [ structify_target(x) for x in rule.attr.libs ],
+      deps = [ str(x.label) for x in rule.attr.deps ],
+      refs = [ structify_ref(x) for x in rule.attr.refs ],
+    )
+
+  return struct()
+
+def _impl(target, ctx):
   if ctx.rule.kind in supported_rule_kinds:
-    if hasattr(ctx.rule.attr, 'srcs'):
+    # if hasattr(ctx.rule.attr, 'srcs'):
 
       # print(dir(ctx.rule.attr))
       # print(ctx.rule.attr.deps)
 
-      if ctx.rule.attr.deps:
-        for d in ctx.rule.attr.deps:
-          print(dir(d))
-          print(dir(d.info))
+      # if ctx.rule.attr.deps:
+      #   for d in ctx.rule.attr.deps:
+      #     print(dir(d))
+      #     print(dir(d.info))
 
       # for x in ctx.rule.attr.srcs:
       #   print(x)
 
-      fsharp_target = FSharpTarget(
-        kind = ctx.rule.kind,
-        build_file_path = ctx.build_file_path,
-        srcs = flatten([ [ f.path for f in x.files.to_list() ] for x in ctx.rule.attr.srcs ]),
-        deps = [ str(x.label) for x in ctx.rule.attr.deps ],
-      )
+      # fsharp_target = Rule(
+      #   kind = ctx.rule.kind,
+      #   attr = ctx.rule.attr,
+      #   # build_file_path = ctx.build_file_path,
+      #   # srcs = flatten([ [ f.path for f in x.files.to_list() ] for x in ctx.rule.attr.srcs ]),
+      #   # deps = [ str(x.label) for x in ctx.rule.attr.deps ],
+      # )
 
       # print(fsharp_target)
 
-      json_file = ctx.actions.declare_file('bazel2proj_%s.json' % (target.label.name))
+    # print(dir(ctx))
+    # print(ctx.rule.attr)
 
-      ctx.actions.write(json_file, fsharp_target.to_json())
-      # print("WROTE " + json_file.path)
+    json_file = ctx.actions.declare_file('bazel2proj_%s.json' % (target.label.name))
 
-      transitive_jsons = depset([ json_file ])
+    json = struct(
+      build_file_path = ctx.build_file_path,
+      workspace_name = ctx.workspace_name,
+      label = str(ctx.label),
+      rule = structify_rule(ctx.rule),
+    ).to_json()
 
+    ctx.actions.write(json_file, json)
+    # print("WROTE " + json_file.path)
+
+    transitive_jsons = depset([ json_file ])
+
+    if ctx.rule.attr.deps:
       for dep in ctx.rule.attr.deps:
         info = dep.info
         transitive_jsons = depset(transitive=[info.transitive_jsons, transitive_jsons])
 
-      return struct(
-        info = struct(
-          jsons = [ json_file ],
-          transitive_jsons = transitive_jsons,
-        ),
-        output_groups = {
-          "jsons": transitive_jsons,
-        },
-      )
+    return struct(
+      info = struct(
+        jsons = [ json_file ],
+        transitive_jsons = transitive_jsons,
+      ),
+      output_groups = {
+        "jsons": transitive_jsons,
+      },
+    )
 
   else:
+    # print(dir(ctx.rule.attr))
+    # print(ctx.rule.attr)
+
     print("Unsupported rule kind: " + ctx.rule.kind)
 
   return struct(
@@ -87,7 +150,7 @@ def _print_aspect_impl(target, ctx):
   #       print(f.path)
   # return []
 
-print_aspect = aspect(
-  implementation = _print_aspect_impl,
+bazel2proj_aspect = aspect(
+  implementation = _impl,
   attr_aspects = [ 'deps' ],
 )

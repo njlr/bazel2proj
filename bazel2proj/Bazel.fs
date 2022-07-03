@@ -2,15 +2,11 @@ module Bazel2Proj.Bazel
 
 open System
 open System.Diagnostics
+open System.IO
+open Thoth.Json.Net
+open Bazel2Proj.Thoth
 
-type LabelKind =
-  {
-    Kind : string
-    Type : string
-    Label : string
-  }
-
-let parseLabelKind (x : string) =
+let private parseLabelKind (x : string) =
   [
     let lines = x.Split([| '\n' |], StringSplitOptions.RemoveEmptyEntries)
 
@@ -61,24 +57,77 @@ let private executeBash (workingDirectory : string) (command : string) =
     return p.ExitCode, stdout, stderr
   }
 
-let findTargets (workspacePath : string) =
+let fetchInfo (workspacePath : string) =
   async {
-    let command = """bazel query 'kind("fsharp_binary", "//...") union kind("fsharp_library", "//...")' --output label_kind"""
+    let command = "bazel info"
 
     let! exitCode, stdout, stderr = executeBash workspacePath command
 
     if exitCode <> 0 then
-      failwith $"Failed to execute Bazel query: \n{stderr}"
+      failwith $"Failed to execute `{command}`: \n{stderr}"
+
+    let lines = stdout.Split([| '\n' |])
+
+    let workspace =
+      lines
+      |> Seq.find (fun x -> x.StartsWith("workspace: "))
+      |> fun x -> x.Substring("workspace: ".Length)
+
+    return
+      {
+        Workspace = workspace
+      }
+  }
+
+let findTargets (workspacePath : string) =
+  async {
+    let query =
+      [
+        "fsharp_binary"
+        "fsharp_library"
+        "csharp_binary"
+        "csharp_library"
+      ]
+      |> Seq.map (fun x -> $"""kind("{x}", "//...")""")
+      |> String.concat " union "
+
+    let command = $"""bazel query '{query}' --output label_kind"""
+
+    let! exitCode, stdout, stderr = executeBash workspacePath command
+
+    if exitCode <> 0 then
+      failwith $"Failed to execute Bazel query `{command}`: \n{stderr}"
 
     return parseLabelKind stdout
   }
 
 let buildAspect (workspacePath : string) (target : string) =
   async {
-    let command = $"""bazel build {target} --aspects @bazel2proj//:aspect.bzl%%print_aspect --output_groups=+default,+jsons"""
+    let command = $"""bazel build {target} --aspects @bazel2proj//:aspect.bzl%%bazel2proj_aspect --build_event_json_file=events.json --output_groups=+default,+jsons"""
 
-    let! exitCode, _, stderr = executeBash workspacePath command
+    let! exitCode, stdout, stderr = executeBash workspacePath command
 
     if exitCode <> 0 then
       failwith $"Failed to build Bazel aspect: \n{stderr}"
+
+    printfn "%s" stdout
+
+    let! eventsJsonLines =
+      File.ReadAllLinesAsync("./events.json")
+      |> Async.AwaitTask
+
+    let fileEvents =
+      [
+        for line in eventsJsonLines do
+          line
+          |> Decode.fromString FileEvent.decode
+      ]
+      |> List.choose
+        (
+          function
+          | Ok x -> Some x
+          | Error _ -> None
+        )
+
+    return fileEvents
   }
