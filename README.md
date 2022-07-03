@@ -2,6 +2,8 @@
 
 Tool for generating `fsproj` and `csproj` files from Bazel build definitions.
 
+Status: Very WIP 🚧
+
 ## How it works
 
  1. Use Bazel query to identify all binary and library targets
