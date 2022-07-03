@@ -8,6 +8,7 @@
     <Compile Include="Domain.fs" />
     <Compile Include="Thoth.fs" />
     <Compile Include="Xml.fs" />
+    <Compile Include="MSBuild.fs" />
     <Compile Include="Bazel.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

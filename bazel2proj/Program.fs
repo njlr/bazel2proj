@@ -254,7 +254,22 @@ let main argv =
 
       printfn $"Wrote {target}"
 
-      ()
+    let projectFilePaths =
+      projectTargets
+      |> Map.toSeq
+      |> Seq.map (fun (k, v) -> projectPath workspacePath k v.Rule)
+      |> Seq.toList
+
+    let slnContent = MSBuild.generateSln workspacePath projectFilePaths
+
+    let slnPath = Path.Combine(".", workspaceName + ".sln")
+
+    do!
+      File.WriteAllTextAsync(slnPath, slnContent)
+      |> Async.AwaitTask
+
+    printfn $"Wrote {slnPath}"
+
     ()
   }
   |> Async.RunSynchronously
