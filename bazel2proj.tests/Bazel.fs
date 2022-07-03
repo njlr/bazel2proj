@@ -1,6 +1,7 @@
 module Bazel2Proj.Tests.Bazel
 
 open Expecto
+open Bazel2Proj
 open Bazel2Proj.Bazel
 
 let tests =

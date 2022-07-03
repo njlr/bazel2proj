@@ -6,7 +6,7 @@ open System.IO
 open Thoth.Json.Net
 open Bazel2Proj.Thoth
 
-let private parseLabelKind (x : string) =
+let parseLabelKind (x : string) =
   [
     let lines = x.Split([| '\n' |], StringSplitOptions.RemoveEmptyEntries)
 
